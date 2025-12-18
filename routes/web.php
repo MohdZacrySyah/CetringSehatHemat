@@ -161,6 +161,42 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Update profil
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('profile.update');
 });
+/*
+|--------------------------------------------------------------------------
+| ADMIN / PENJUAL ROUTES
+|--------------------------------------------------------------------------
+*/
+// Semua route di dalam group ini HANYA bisa diakses oleh user dengan role 'admin'
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    
+    // Dashboard Khusus Penjual
+    Route::get('/dashboard', function () {
+        return "Halo Admin! Ini halaman khusus penjual.";
+        // Nanti kita ganti ini dengan view('admin.dashboard');
+    })->name('dashboard');
+
+    // Nanti kita taruh fitur Tambah Menu, Lihat Pesanan, dll di sini
+});
+/*
+|--------------------------------------------------------------------------
+| ADMIN ROUTES (Role: Admin Only)
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    
+    // Dashboard
+    Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'index'])->name('dashboard');
+
+    // Manajemen Pesanan
+    Route::get('/orders', [App\Http\Controllers\AdminController::class, 'orders'])->name('orders');
+    Route::patch('/orders/{id}/update', [App\Http\Controllers\AdminController::class, 'updateOrderStatus'])->name('orders.update');
+
+    // Manajemen Menu
+    Route::get('/menus', [App\Http\Controllers\AdminController::class, 'menus'])->name('menus');
+    Route::get('/menus/create', [App\Http\Controllers\AdminController::class, 'createMenu'])->name('menus.create');
+    Route::post('/menus', [App\Http\Controllers\AdminController::class, 'storeMenu'])->name('menus.store');
+    Route::delete('/menus/{id}', [App\Http\Controllers\AdminController::class, 'destroyMenu'])->name('menus.destroy');
+});
 
 /*
 |--------------------------------------------------------------------------
