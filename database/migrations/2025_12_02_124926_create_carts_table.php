@@ -17,13 +17,10 @@ return new class extends Migration
             // Relasi ke Menu (Makanan)
             $table->foreignId('menu_id')->constrained('menus')->onDelete('cascade');
             
-            // Jumlah pesanan (Default 1)
+            // Hanya simpan jumlah, data lain ambil dari relasi menu_id
             $table->integer('quantity')->default(1);
             
             $table->timestamps();
-
-            // Opsional: Mencegah duplikasi row (1 user = 1 row per menu)
-            // $table->unique(['user_id', 'menu_id']);
         });
     }
 

@@ -47,12 +47,11 @@ class CartController extends Controller
                         ->first();
 
         if ($cartItem) {
-            // Jika sudah ada, tambahkan jumlahnya
+            // Jika sudah ada, update jumlahnya
             $cartItem->quantity += $quantity;
             $cartItem->save();
         } else {
-            // Jika belum ada, buat baru
-            // Kita HANYA menyimpan ID, data lain diambil via relasi
+            // Jika belum ada, buat baru (HANYA SIMPAN ID & QTY)
             Cart::create([
                 'user_id' => $userId,
                 'menu_id' => $menuId,
