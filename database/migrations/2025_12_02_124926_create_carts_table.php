@@ -10,17 +10,20 @@ return new class extends Migration
     {
         Schema::create('carts', function (Blueprint $table) {
             $table->id();
+            
+            // Relasi ke User (Pembeli)
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
+            
+            // Relasi ke Menu (Makanan)
             $table->foreignId('menu_id')->constrained('menus')->onDelete('cascade');
-            $table->string('name');
-            $table->text('image');
-            $table->integer('price');
+            
+            // Jumlah pesanan (Default 1)
             $table->integer('quantity')->default(1);
-            $table->decimal('total_price', 10, 2);
+            
             $table->timestamps();
 
-            // Composite index untuk mencegah duplikasi item
-            $table->unique(['user_id', 'menu_id']);
+            // Opsional: Mencegah duplikasi row (1 user = 1 row per menu)
+            // $table->unique(['user_id', 'menu_id']);
         });
     }
 

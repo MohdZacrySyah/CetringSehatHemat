@@ -115,10 +115,10 @@ class AdminController extends Controller
 
         // Cek jika ada upload gambar baru
         if ($request->hasFile('image')) {
-            // Hapus gambar lama jika ada (opsional, uncomment jika ingin menghapus file lama)
-            // if($menu->image && file_exists(public_path($menu->image))){ 
-            //    unlink(public_path($menu->image)); 
-            // }
+            // Hapus gambar lama jika ada
+            if($menu->image && file_exists(public_path($menu->image))){ 
+               unlink(public_path($menu->image)); 
+            }
 
             $file = $request->file('image');
             $filename = time() . '_' . $file->getClientOriginalName();

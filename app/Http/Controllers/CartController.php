@@ -14,13 +14,16 @@ class CartController extends Controller
     {
         $userId = Auth::id();
         
-        // Ambil data keranjang milik user yang sedang login, beserta data menunya
+        // Ambil data keranjang user yang login, beserta relasi ke menu
         $carts = Cart::where('user_id', $userId)->with('menu')->get();
         
         // Hitung total bayar
         $total = 0;
         foreach ($carts as $cart) {
-            $total += $cart->menu->price * $cart->quantity;
+            // Harga diambil dari relasi menu, bukan dari tabel cart
+            if($cart->menu) {
+                $total += $cart->menu->price * $cart->quantity;
+            }
         }
 
         return view('keranjang', compact('carts', 'total'));
@@ -49,6 +52,7 @@ class CartController extends Controller
             $cartItem->save();
         } else {
             // Jika belum ada, buat baru
+            // Kita HANYA menyimpan ID, data lain diambil via relasi
             Cart::create([
                 'user_id' => $userId,
                 'menu_id' => $menuId,
