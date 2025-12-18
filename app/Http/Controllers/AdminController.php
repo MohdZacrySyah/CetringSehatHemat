@@ -13,13 +13,17 @@ class AdminController extends Controller
     // 1. DASHBOARD UTAMA
     public function index()
     {
-        // Hitung statistik untuk ditampilkan di kartu dashboard
+        // Hitung statistik
         $totalPendapatan = Order::where('status', 'paid')->sum('total_bayar');
         $pesananBaru = Order::where('status', 'pending')->count();
         $totalMenu = Menu::count();
         $pesananAktif = Order::whereIn('status', ['paid', 'confirmed', 'processing', 'delivering'])->count();
 
-        return view('admin.dashboard', compact('totalPendapatan', 'pesananBaru', 'totalMenu', 'pesananAktif'));
+        // Ambil 5 pesanan terbaru untuk ditampilkan di dashboard
+        $orders = Order::with('user')->latest()->take(5)->get();
+
+        // Masukkan 'orders' ke dalam compact
+        return view('admin.dashboard', compact('totalPendapatan', 'pesananBaru', 'totalMenu', 'pesananAktif', 'orders'));
     }
 
     // 2. MANAJEMEN PESANAN (Lihat semua pesanan)
@@ -77,18 +81,65 @@ class AdminController extends Controller
             'description' => $request->description,
             'price' => $request->price,
             'image' => $imagePath, // Simpan path gambar
-            'is_paket_hemat' => $request->has('is_paket_hemat') ? true : false,
+            'is_paket_hemat' => $request->has('is_paket_hemat'),
         ]);
 
         return redirect()->route('admin.menus')->with('success', 'Menu berhasil ditambahkan!');
+    }
+
+    // === TAMBAHAN BARU: FORM EDIT MENU ===
+    public function editMenu($id)
+    {
+        $menu = Menu::findOrFail($id);
+        return view('admin.menus.edit', compact('menu'));
+    }
+
+    // === TAMBAHAN BARU: PROSES UPDATE MENU ===
+    public function updateMenu(Request $request, $id)
+    {
+        $menu = Menu::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required',
+            'description' => 'required',
+            'price' => 'required|numeric',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // Image nullable saat edit
+        ]);
+
+        $data = [
+            'name' => $request->name,
+            'description' => $request->description,
+            'price' => $request->price,
+            'is_paket_hemat' => $request->has('is_paket_hemat'),
+        ];
+
+        // Cek jika ada upload gambar baru
+        if ($request->hasFile('image')) {
+            // Hapus gambar lama jika ada (opsional, uncomment jika ingin menghapus file lama)
+            // if($menu->image && file_exists(public_path($menu->image))){ 
+            //    unlink(public_path($menu->image)); 
+            // }
+
+            $file = $request->file('image');
+            $filename = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('image'), $filename);
+            $data['image'] = 'image/' . $filename;
+        }
+
+        $menu->update($data);
+
+        return redirect()->route('admin.menus')->with('success', 'Menu berhasil diperbarui!');
     }
 
     // Hapus Menu
     public function destroyMenu($id)
     {
         $menu = Menu::findOrFail($id);
-        // Hapus file gambar jika ada (opsional)
-        // if(file_exists(public_path($menu->image))){ unlink(public_path($menu->image)); }
+        
+        // Hapus file gambar jika ada
+        if($menu->image && file_exists(public_path($menu->image))){ 
+            unlink(public_path($menu->image)); 
+        }
         
         $menu->delete();
         return redirect()->back()->with('success', 'Menu dihapus.');

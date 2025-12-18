@@ -7,14 +7,17 @@ use App\Models\Menu;
 
 class HomeController extends Controller
 {
-   public function index()
+    /**
+     * Show the application dashboard.
+     */
+    public function index()
     {
-        // menu biasa SAJA (bukan paket hemat)
-        $menus = Menu::where('is_paket_hemat', false)->get();
+        // Ambil Paket Hemat (is_paket_hemat = true/1)
+        $paketHemat = Menu::where('is_paket_hemat', true)->latest()->get();
 
-        // menu paket hemat untuk grid
-        $paketHemat = Menu::where('is_paket_hemat', true)->get();
+        // Ambil Menu Biasa (is_paket_hemat = false/0)
+        $menuReguler = Menu::where('is_paket_hemat', false)->latest()->get();
 
-        return view('home', compact('menus', 'paketHemat'));
+        return view('home', compact('paketHemat', 'menuReguler'));
     }
 }
