@@ -2,7 +2,10 @@
 
 namespace Database\Seeders;
 
+<<<<<<< HEAD
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+=======
+>>>>>>> 330fbf27bdd07fbc598550cc5aa908ed5f5a67fe
 use Illuminate\Database\Seeder;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
@@ -14,6 +17,7 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
+<<<<<<< HEAD
         $users = [
             [
                 'name' => 'Rosita Maimunah',
@@ -69,3 +73,14 @@ class UserSeeder extends Seeder
         $this->command->info('✅ User dummy berhasil dibuat!');
     }
 }
+=======
+        // 1. Buat Akun ADMIN / PENJUAL
+        User::create([
+            'name' => 'Admin',
+            'email' => 'admin@gmail.com',
+            'role' => 'admin', // Role khusus admin
+            'password' => Hash::make('admin123'), // Password: password
+        ]);
+    }
+}
+>>>>>>> 330fbf27bdd07fbc598550cc5aa908ed5f5a67fe

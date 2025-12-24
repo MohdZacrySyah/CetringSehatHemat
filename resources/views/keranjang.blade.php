@@ -175,15 +175,16 @@
     .checkout-button:hover {
         background-color: #4A572A;
     }
-    .checkout-button:disabled {
+    /* Style disabled untuk tombol form */
+    .checkout-button:disabled, .checkout-button.disabled {
         background: #9faf82;
         cursor: not-allowed;
-        pointer-events: none;
     }
     .empty-text {
         text-align: center;
-        color: #555;
+        color: white;
         margin-top: 40px;
+        font-weight: bold;
     }
 </style>
 @endpush
@@ -195,45 +196,78 @@
 </div>
 
 <div class="cart-list-container">
+    {{-- Notifikasi Sukses --}}
+    @if(session('success'))
+        <div style="background-color:#dcfce7; color:#166534; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
+            {{ session('success') }}
+        </div>
+    @endif
+
     @if($carts->isEmpty())
         <div class="empty-text">
             Keranjang Anda masih kosong.
         </div>
+        <div style="text-align: center; margin-top: 20px;">
+            <a href="{{ route('dashboard') }}" style="color: white; text-decoration: underline;">Kembali ke Menu</a>
+        </div>
     @else
         @foreach($carts as $cart)
-            
-        <div class="cart-item" data-price="{{ $cart->price }}">
-            <label class="checkbox-container">
-                <div class="custom-checkbox">
-                    <input type="checkbox" onchange="calculateTotal()">
-                    <span class="checkmark"></span>
-                </div>
-            </label>
-            <img src="{{ asset($cart->image) }}" alt="{{ $cart->name }}"> <!-- Gambar -->
-            <div class="item-details">
-                <h3>{{ $cart->name }}</h3>
-                <p>Rp {{ number_format($cart->price, 0, ',', '.') }}</p>
-            </div>
-            <div class="quantity-area">
-                <form action="{{ route('cart.update', $cart->id) }}" method="POST" style="display:inline-flex;align-items:center;">
-                    @csrf
-                    @method('PUT')
-                    <div class="quantity-adjuster">
-                        <button type="submit" name="quantity" value="{{ $cart->quantity - 1 }}" class="quantity-btn" {{ $cart->quantity <= 1 ? 'disabled' : '' }}>-</button>
-                        <span class="quantity-number">{{ $cart->quantity }}</span>
-                        <button type="submit" name="quantity" value="{{ $cart->quantity + 1 }}" class="quantity-btn">+</button>
+            {{-- Cek if menu exist untuk mencegah error --}}
+            @if($cart->menu)
+                {{-- FIX: Ambil harga dari relasi menu --}}
+                <div class="cart-item" data-price="{{ $cart->menu->price }}">
+                    <label class="checkbox-container">
+                        <div class="custom-checkbox">
+                            <input type="checkbox" onchange="calculateTotal()" checked>
+                            <span class="checkmark"></span>
+                        </div>
+                    </label>
+                    
+                    {{-- FIX: Gambar dari relasi menu --}}
+                    <img src="{{ asset($cart->menu->image) }}" alt="{{ $cart->menu->name }}">
+                    
+                    <div class="item-details">
+                        {{-- FIX: Nama & Harga dari relasi menu --}}
+                        <h3>{{ $cart->menu->name }}</h3>
+                        <p>Rp {{ number_format($cart->menu->price, 0, ',', '.') }}</p>
                     </div>
-                </form>
-                <form action="{{ route('cart.remove', $cart->id) }}" method="POST" style="margin-top:6px;">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="remove-btn"><i class="fa-solid fa-trash"></i></button>
-                </form>
-            </div>
-        </div>
+                    
+                    <div class="quantity-area">
+                        <form action="{{ route('cart.update', $cart->id) }}" method="POST" style="display:inline-flex;align-items:center;">
+                            @csrf
+                            @method('PUT')
+                            <div class="quantity-adjuster">
+                                <button type="submit" name="quantity" value="{{ $cart->quantity - 1 }}" class="quantity-btn" {{ $cart->quantity <= 1 ? 'disabled' : '' }}>-</button>
+                                <span class="quantity-number">{{ $cart->quantity }}</span>
+                                <button type="submit" name="quantity" value="{{ $cart->quantity + 1 }}" class="quantity-btn">+</button>
+                            </div>
+                        </form>
+                        
+                        <form action="{{ route('cart.remove', $cart->id) }}" method="POST" style="margin-top:6px;">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="remove-btn" onclick="return confirm('Hapus menu ini?')"><i class="fa-solid fa-trash"></i></button>
+                        </form>
+                    </div>
+                </div>
+            @endif
         @endforeach
+
+        <div class="total-summary">
+            <span>Total :</span>
+            <span id="total-price">Rp 0</span>
+        </div>
+        
+        {{-- FIX: Gunakan Form Action ke route Checkout, bukan Link --}}
+        <form action="{{ route('order.checkout') }}" method="POST">
+            @csrf
+            <button type="submit" class="checkout-button" id="checkoutBtn">
+                Beli Sekarang
+            </button>
+        </form>
     @endif
 
+<<<<<<< HEAD
     <div class="total-summary">
         <span>Total :</span>
         <span id="total-price">Rp 0</span>
@@ -246,6 +280,8 @@
     </button>
 </form>
 
+=======
+>>>>>>> 330fbf27bdd07fbc598550cc5aa908ed5f5a67fe
 </div>
 @endsection
 
@@ -258,12 +294,17 @@
         
         items.forEach(item => {
             let checkbox = item.querySelector('input[type="checkbox"]');
+            
             if (checkbox && checkbox.checked) {
                 hasChecked = true;
+                // Harga sudah diambil dari data-price yang benar (menu->price)
                 let price = parseFloat(item.dataset.price);
                 let qtyText = item.querySelector('.quantity-number');
                 let quantity = parseInt(qtyText ? qtyText.textContent : "1");
-                total += price * quantity;
+                
+                if(!isNaN(price)) {
+                    total += price * quantity;
+                }
             }
         });
         
@@ -271,18 +312,22 @@
         totalPriceEl.textContent = 'Rp ' + total.toLocaleString('id-ID');
         
         let checkoutBtn = document.getElementById('checkoutBtn');
-        if (hasChecked && total > 0) {
-            checkoutBtn.classList.remove('disabled');
-            checkoutBtn.style.pointerEvents = 'auto';
-        } else {
-            checkoutBtn.classList.add('disabled');
-            checkoutBtn.style.pointerEvents = 'none';
+        if (checkoutBtn) {
+            if (hasChecked && total > 0) {
+                checkoutBtn.disabled = false;
+                checkoutBtn.classList.remove('disabled');
+            } else {
+                checkoutBtn.disabled = true;
+                checkoutBtn.classList.add('disabled');
+            }
         }
     }
     
     document.addEventListener('DOMContentLoaded', function() {
+        // Hitung total saat halaman dimuat
         calculateTotal();
         
+        // Listener untuk setiap checkbox
         document.querySelectorAll('input[type="checkbox"]').forEach(function(cb){
             cb.addEventListener('change', calculateTotal);
         });

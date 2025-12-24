@@ -9,79 +9,88 @@ use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
-    // Tampilkan halaman keranjang
+    // 1. TAMPILKAN HALAMAN KERANJANG
     public function show()
     {
         $userId = Auth::id();
+        
+        // Ambil data keranjang user yang login, beserta relasi ke menu
         $carts = Cart::where('user_id', $userId)->with('menu')->get();
-        $total = Cart::total($userId);
+        
+        // Hitung total bayar
+        $total = 0;
+        foreach ($carts as $cart) {
+            // Harga diambil dari relasi menu, bukan dari tabel cart
+            if($cart->menu) {
+                $total += $cart->menu->price * $cart->quantity;
+            }
+        }
 
         return view('keranjang', compact('carts', 'total'));
     }
 
-    // Tambah item ke keranjang
+    // 2. TAMBAH ITEM KE KERANJANG
     public function add(Request $request)
     {
+        $request->validate([
+            'menu_id' => 'required|exists:menus,id',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
         $userId = Auth::id();
-        $menuId = $request->id;
-        $name = $request->name;
-        $price = $request->price;
-        $image = $request->image;
+        $menuId = $request->menu_id;
+        $quantity = $request->quantity;
 
-        // Cek apakah item sudah ada di cart
-        $existingCart = Cart::where('user_id', $userId)
-            ->where('menu_id', $menuId)
-            ->first();
+        // Cek apakah menu ini sudah ada di keranjang user?
+        $cartItem = Cart::where('user_id', $userId)
+                        ->where('menu_id', $menuId)
+                        ->first();
 
-        if ($existingCart) {
-            // Update quantity jika sudah ada
-            $existingCart->quantity += 1;
-            $existingCart->total_price = $existingCart->price * $existingCart->quantity;
-            $existingCart->save();
+        if ($cartItem) {
+            // Jika sudah ada, update jumlahnya
+            $cartItem->quantity += $quantity;
+            $cartItem->save();
         } else {
-            // Buat cart item baru
+            // Jika belum ada, buat baru (HANYA SIMPAN ID & QTY)
             Cart::create([
                 'user_id' => $userId,
                 'menu_id' => $menuId,
-                'name' => $name,
-                'image' => $image,
-                'price' => $price,
-                'quantity' => 1,
-                'total_price' => $price,
+                'quantity' => $quantity,
             ]);
         }
 
-        return redirect()->route('cart')->with('success', 'Item berhasil ditambahkan ke keranjang!');
+        return redirect()->back()->with('success', 'Berhasil masuk keranjang! 🛒');
     }
 
-    // Update quantity item
+    // 3. UPDATE JUMLAH ITEM (Tombol + / - di keranjang)
     public function update(Request $request, $id)
     {
-        $cart = Cart::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
-        
-        $cart->quantity = $request->quantity;
-        $cart->total_price = $cart->price * $cart->quantity;
-        $cart->save();
+        $request->validate([
+            'quantity' => 'required|integer|min:1',
+        ]);
 
-        return redirect()->route('cart')->with('success', 'Keranjang berhasil diperbarui!');
+        $cart = Cart::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        $cart->update(['quantity' => $request->quantity]);
+
+        return redirect()->route('cart')->with('success', 'Jumlah diupdate.');
     }
 
-    // Hapus item dari keranjang
+    // 4. HAPUS SATU ITEM
     public function remove($id)
     {
         $cart = Cart::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
         $cart->delete();
 
-        return redirect()->route('cart')->with('success', 'Item berhasil dihapus dari keranjang!');
+        return redirect()->route('cart')->with('success', 'Item dihapus dari keranjang.');
     }
 
-    // Kosongkan seluruh keranjang
+    // 5. KOSONGKAN KERANJANG
     public function clear()
     {
         Cart::where('user_id', Auth::id())->delete();
-        
-        return redirect()->route('cart')->with('success', 'Keranjang berhasil dikosongkan!');
+        return redirect()->route('cart')->with('success', 'Keranjang dikosongkan.');
     }
+<<<<<<< HEAD
     public function checkout()
     {
         $carts = auth()->user()->carts;
@@ -108,3 +117,6 @@ class CartController extends Controller
     }
 
 }
+=======
+}
+>>>>>>> 330fbf27bdd07fbc598550cc5aa908ed5f5a67fe
